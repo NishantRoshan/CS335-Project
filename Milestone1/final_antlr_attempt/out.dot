@@ -1,0 +1,35 @@
+digraph G {
+	00 [label="compilation_unit\n packagefin... "]
+	11 [label="package_declaration\n packagefin... "]
+	22 [label="qualified_name\n fin.tests... "]
+	33 [label="identifier\n fin",shape="box "]
+	34 [label="identifier\n tests",shape="box "]
+	15 [label="type_declaration\n publicclas... "]
+	26 [label="class_or_interface_modifier\n public",shape="box "]
+	27 [label="class_declaration\n classt{int... "]
+	38 [label="identifier\n t",shape="box "]
+	39 [label="class_body\n {inta=8+9;... "]
+	410 [label="field_declaration\n inta=8+9;... "]
+	511 [label="primitive_type\n int",shape="box "]
+	512 [label="variable_declarator\n a=8+9... "]
+	613 [label="identifier\n a",shape="box "]
+	614 [label="expression\n 8+9... "]
+	715 [label="integer_literal\n 8",shape="box "]
+	716 [label="integer_literal\n 9",shape="box "]
+	00 -> 11
+	11 -> 22
+	22 -> 33
+	22 -> 34
+	00 -> 15
+	15 -> 26
+	15 -> 27
+	27 -> 38
+	27 -> 39
+	39 -> 410
+	410 -> 511
+	410 -> 512
+	512 -> 613
+	512 -> 614
+	614 -> 715
+	614 -> 716
+}

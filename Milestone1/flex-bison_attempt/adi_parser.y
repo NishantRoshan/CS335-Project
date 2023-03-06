@@ -1,61 +1,47 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <ctype.h>
+
+/* PROLOGUE */
+
 #include <bits/stdc++.h>
 using namespace std;
-extern int yylex();
-extern int yyparse();
-extern FILE *yyin;
-FILE *out;
-FILE *digraph;
 
+extern FILE *yyin;
+extern int yylineno;
+#define YYDEBUG 1
+// Data structures to store the tree
 vector<pair<string,vector<int>>> nodes;
 int startNode;
+
 
 void yyerror(char const *);
 int createNode(string);
 void addChild(int, int);
 
-void yyerror(const char *s);
-int maxsize = 1000000;
 %}
-
-%locations
-
-%union{
-	int ival;
-	char *sval;
-	float fval;
+%code provides {
+void yyerror (char const*);
+int yylex (YYSTYPE*);
 }
-%define parse.error verbose
-%start input
+/* BISON DECLARATIONS */
+%union{
+  char* s;
+  int i;
+}
 
-%token CLASS INSTANCEOF NEW SUPER THIS
-%token BOOL BYTE CHAR T FLOAT INT F N VOID
-%token BREAK CASE DEFAULT ELSE IF SWITCH
-%token CONT DO FOR WHILE
-%token RETURN
-%token CONST
-%token <sval>CID ID
-%token SEP TRM COLON
-%token ARRAY_S ARRAY_E BLOCK_S BLOCK_E PAREN_S PAREN_E
-%token OP_ASS OP_ADD_ASS OP_SUB_ASS OP_DIV_ASS OP_MUL_ASS OP_MOD_ASS OP_LSH_ASS OP_RSH_ASS OP_AND_ASS OP_OR_ASS OP_XOR_ASS OP_ZRSH_ASS
-%token OP_CON_Q OP_CON_AND OP_CON_OR
-%token OP_OR OP_XOR OP_AND OP_EQ OP_NEQ OP_GRE OP_LES OP_GEQ OP_LEQ
-%token OP_RSH OP_LSH OP_ADD OP_SUB OP_MUL OP_DIV OP_MOD OP_INC OP_DEC OP_DOT OP_ZRSH
-%token <ival>INT_LIT_D INT_LIT_O INT_LIT_H
-%token <fval>FLOAT_LIT
-%token <sval>CHAR_LIT STR_LIT
-%token ERROR
-%token PRINT SCAN OP_NEG STRING
-%token EXTENDS
-
-/*%type*/
+%verbose
+%define parse.trace
+%define api.pure
+%token <s> KEYWORD
+%token <s> IDENTIFIER
+%token <s> LITERAL
+%token <s> OPERATOR
+%token <s> SEP
+%token <i> .
 
 %%
+
+
+    /* GRAMMAR RULES */
 input:
   ws compilation_unit ws
 ;
@@ -78,14 +64,14 @@ space.opt:
 | /*empty*/
 ;
 dot_ind.multiopt:
-  dot_ind.multiopt '.' ID
+  dot_ind.multiopt '.' IDENTIFIER
 | /*empty*/
 ;
-type_ID:
-  ID
+type_IDENTIFIER:
+  IDENTIFIER
 ;
-unqualified_method_ID:
-  ID
+unqualified_method_IDENTIFIER:
+  IDENTIFIER
 ;
 	/* Types, Values and Variables */
 type:
@@ -121,15 +107,15 @@ class_or_interface_type:
 | interface_type
 ;
 class_type:
-  annotation.multiopt type_ID type_arguments.opt
-| package_name '.' annotation.multiopt type_ID type_arguments.opt
-| class_or_interface_type '.' annotation.multiopt type_ID type_arguments.opt
+  annotation.multiopt type_IDENTIFIER type_arguments.opt
+| package_name '.' annotation.multiopt type_IDENTIFIER type_arguments.opt
+| class_or_interface_type '.' annotation.multiopt type_IDENTIFIER type_arguments.opt
 ;
 interface_type:
   class_type
 ;
 type_variable:
-  annotation.multiopt type_ID
+  annotation.multiopt type_IDENTIFIER
 ;
 array_type:
   primitive_type dims
@@ -143,7 +129,7 @@ an_sp.multiopt:
   an_sp.multiopt annotation.multiopt space.opt
 | /*empty*/
 type_parameter:
-  type_parameter_modifier.multiopt type_ID type_bound.opt
+  type_parameter_modifier.multiopt type_IDENTIFIER type_bound.opt
 ;
 type_parameter_modifier.multiopt:
   type_parameter_modifier
@@ -191,31 +177,31 @@ wildcard_bounds:
 
   /* Names */
 module_name:
-  ID
-| module_name '.' ID
+  IDENTIFIER
+| module_name '.' IDENTIFIER
 ;
 package_name:
-  ID
-| package_name '.' ID
+  IDENTIFIER
+| package_name '.' IDENTIFIER
 ;
 type_name:
-  type_ID
-| package_or_type_name '.' type_ID
+  type_IDENTIFIER
+| package_or_type_name '.' type_IDENTIFIER
 ;
 expression_name:
-  ID
-| ambiguous_name '.' ID
+  IDENTIFIER
+| ambiguous_name '.' IDENTIFIER
 ;
 method_name:
-  unqualified_method_ID
+  unqualified_method_IDENTIFIER
 ;
 package_or_type_name:
-  ID
-| package_or_type_name '.' ID
+  IDENTIFIER
+| package_or_type_name '.' IDENTIFIER
 ;
 ambiguous_name:
-  ID
-| ambiguous_name '.' ID
+  IDENTIFIER
+| ambiguous_name '.' IDENTIFIER
 ;
 
 
@@ -235,7 +221,7 @@ package_declaration.opt:
 | /* empty */
 ;
 package_declaration:
-  package_modifier.multiopt ws "package" ws ID dot_ind.multiopt ';'
+  package_modifier.multiopt ws "package" ws IDENTIFIER dot_ind.multiopt ';'
 ;
 package_modifier.multiopt:
   package_modifier.multiopt package_modifier
@@ -261,7 +247,7 @@ type_import_on_demand_declaration:
   ws "import" ws package_or_type_name '.' '*' ';'
 ;
 single_static_import_declaration:
-  ws "import" ws "static" type_name '.' ID ';'
+  ws "import" ws "static" type_name '.' IDENTIFIER ';'
 ;
 static_import_on_demand_declaration:
   ws "import" ws "static" type_name '.' '*' ';'
@@ -277,7 +263,7 @@ top_level_class_or_interface_declaration:
 | ';'
 ;
 module_declaration:
-  annotation.multiopt open.opt ws "module" ws ID dot_ind.multiopt '{' module_directive.multiopt '}'
+  annotation.multiopt open.opt ws "module" ws IDENTIFIER dot_ind.multiopt '{' module_directive.multiopt '}'
 ;
 open.opt:
   "open"
@@ -323,7 +309,7 @@ class_declaration:
 | record_declaration
 ;
 normal_class_declaration:
-  class_modifier.multiopt ws "class" wsc type_ID ws type_parameters.opt class_extends.opt class_implements.opt class_permits.opt class_body
+  class_modifier.multiopt ws "class" wsc type_IDENTIFIER ws type_parameters.opt class_extends.opt class_implements.opt class_permits.opt class_body
 ;
 class_modifier.multiopt:
   class_modifier.multiopt class_modifier
@@ -434,7 +420,7 @@ eq_variable_initializer.opt:
 | /*empty*/
 ;
 variable_declarator_id:
-  ID dims.opt
+  IDENTIFIER dims.opt
 ;
 dims.opt:
   dims
@@ -462,9 +448,9 @@ unann_class_or_interface_type:
 | unann_interface_type
 ;
 unann_class_type:
-  type_ID type_arguments.opt
-| package_name '.' annotation.multiopt type_ID type_arguments.opt
-| unann_class_or_interface_type '.' annotation.multiopt type_ID type_arguments.opt
+  type_IDENTIFIER type_arguments.opt
+| package_name '.' annotation.multiopt type_IDENTIFIER type_arguments.opt
+| unann_class_or_interface_type '.' annotation.multiopt type_IDENTIFIER type_arguments.opt
 ;
 type_arguments.opt:
   type_arguments
@@ -474,7 +460,7 @@ unann_interface_type:
   unann_class_type
 ;
 unann_type_variable:
-  type_ID
+  type_IDENTIFIER
 ;
 unann_array_type:
   unann_primitive_type dims
@@ -513,7 +499,7 @@ result:
 | "void"
 ;
 method_declarator:
-  ID '(' receiver_parameter_com.opt formal_parameter_list.opt ')' dims.opt
+  IDENTIFIER '(' receiver_parameter_com.opt formal_parameter_list.opt ')' dims.opt
 ;
 receiver_parameter_com.opt:
   receiver_parameter ','
@@ -524,10 +510,10 @@ formal_parameter_list.opt:
 | /*empty*/
 ;
 receiver_parameter:
-  annotation.multiopt unann_type ID_dot.opt "this"
+  annotation.multiopt unann_type IDENTIFIER_dot.opt "this"
 ;
-ID_dot.opt:
-  ID '.'
+IDENTIFIER_dot.opt:
+  IDENTIFIER '.'
 | /*empty*/
 ;
 formal_parameter_list:
@@ -546,7 +532,7 @@ variable_modifier.multiopt:
 | /*empty*/
 ;
 variable_arity_parameter:
-  variable_modifier.multiopt unann_type annotation.multiopt "..." ID
+  variable_modifier.multiopt unann_type annotation.multiopt "..." IDENTIFIER
 ;
 variable_modifier:
   annotation
@@ -593,7 +579,7 @@ constructor_declarator:
   type_parameters.opt simple_type_name '(' receiver_parameter_com.opt formal_parameter_list.opt ')'
 ;
 simple_type_name:
-  type_ID
+  type_IDENTIFIER
 ;
 constructor_body:
   '{' explicit_constructor_invocation.opt block_statements.opt '}'
@@ -617,7 +603,7 @@ argument_list.opt:
 | /*empty*/
 ;
 enum_declaration:
-  class_modifier.multiopt "enum" type_ID class_implements.opt enum_body
+  class_modifier.multiopt "enum" type_IDENTIFIER class_implements.opt enum_body
 ;
 enum_body:
   '{' enum_constant_list.opt com.opt enum_body_declarations.opt '}'
@@ -642,7 +628,7 @@ com_enum_constant.multiopt:
 | /*empty*/
 ;
 enum_constant:
-  enum_constant_modifier.multiopt ID "[(" argument_list.opt ")]" class_body.opt
+  enum_constant_modifier.multiopt IDENTIFIER "[(" argument_list.opt ")]" class_body.opt
 ;
 enum_constant_modifier.multiopt:
   enum_constant_modifier.multiopt enum_constant_modifier
@@ -659,7 +645,7 @@ enum_body_declarations:
   ';' class_body_declaration.multiopt
 ;
 record_declaration:
-  class_modifier.multiopt "record" type_ID type_parameters.opt record_header class_implements.opt record_body
+  class_modifier.multiopt "record" type_IDENTIFIER type_parameters.opt record_header class_implements.opt record_body
 ;
 record_header:
   '(' record_component_list.opt ')'
@@ -677,7 +663,7 @@ com_record_component.multiopt:
 ;
 
 record_component:
-  record_component_modifier.multiopt unann_type ID
+  record_component_modifier.multiopt unann_type IDENTIFIER
 | variable_arity_record_component
 ;
 record_component_modifier.multiopt:
@@ -685,7 +671,7 @@ record_component_modifier.multiopt:
 | /*empty*/
 ;
 variable_arity_record_component:
-  record_component_modifier.multiopt unann_type annotation.multiopt "..." ID
+  record_component_modifier.multiopt unann_type annotation.multiopt "..." IDENTIFIER
 ;
 record_component_modifier:
   annotation
@@ -712,7 +698,7 @@ interface_declaration:
 | annotation_interface_declaration
 ;
 normal_interface_declaration:
-  interface_modifier.multiopt "interface" type_ID type_parameters.opt interface_extends.opt interface_permits.opt interface_body
+  interface_modifier.multiopt "interface" type_IDENTIFIER type_parameters.opt interface_extends.opt interface_permits.opt interface_body
 ;
 interface_modifier.multiopt:
   interface_modifier.multiopt interface_modifier
@@ -787,7 +773,7 @@ interface_method_modifier:
 | "strictfp"
 ;
 annotation_interface_declaration:
-  interface_modifier.multiopt '@' "interface" type_ID annotation_interface_body
+  interface_modifier.multiopt '@' "interface" type_IDENTIFIER annotation_interface_body
 ;
 annotation_interface_body:
   '{' annotation_interface_member_declaration.multiopt '}'
@@ -804,7 +790,7 @@ annotation_interface_member_declaration:
 | ';'
 ;
 annotation_interface_element_declaration:
-  annotation_interface_element_modifier.multiopt unann_type ID '(' ')' dims.opt default_value.opt ';'
+  annotation_interface_element_modifier.multiopt unann_type IDENTIFIER '(' ')' dims.opt default_value.opt ';'
 ;
 annotation_interface_element_modifier.multiopt:
   annotation_interface_element_modifier.multiopt annotation_interface_element_modifier
@@ -842,7 +828,7 @@ com_element_value_pair.multiopt:
 | /*empty*/
 ;
 element_value_pair:
-  ID '=' element_value
+  IDENTIFIER '=' element_value
 ;
 element_value:
   conditional_expression
@@ -953,10 +939,10 @@ empty_statement:
   ';'
 ;
 labeled_statement:
-  ID ':' statement
+  IDENTIFIER ':' statement
 ;
 labeled_statement_no_short_if:
-  ID ':' statement_no_short_if
+  IDENTIFIER ':' statement_no_short_if
 ;
 expression_statement:
   statement_expression ';'
@@ -1077,17 +1063,17 @@ enhanced_for_statement_no_short_if:
   "for" '(' local_variable_declaration ':' expression ')' statement_no_short_if
 ;
 break_statement:
-  "break" ID.opt ';'
+  "break" IDENTIFIER.opt ';'
 ;
-ID.opt:
-  ID
+IDENTIFIER.opt:
+  IDENTIFIER
 | /*empty*/
 ;
 yield_statement:
   "yield" expression ';'
 ;
 continue_statement:
-  "continue" ID.opt ';'
+  "continue" IDENTIFIER.opt ';'
 ;
 return_statement:
   "return" expression.opt ';'
@@ -1172,7 +1158,7 @@ primary:
 | array_creation_expression
 ;
 primary_no_new_array:
-  CHAR_LIT
+  LITERAL
 | class_literal
 | "this"
 | type_name '.' "this"
@@ -1198,10 +1184,10 @@ unqualified_class_instance_creation_expression:
   "new" type_arguments.opt class_or_interface_type_to_instantiate '(' argument_list.opt ')' class_body.opt
 ;
 class_or_interface_type_to_instantiate:
-  annotation.multiopt ID dot_annotation.multiopt_ID.multiopt type_arguments_or_diamond.opt
+  annotation.multiopt IDENTIFIER dot_annotation.multiopt_IDENTIFIER.multiopt type_arguments_or_diamond.opt
 ;
-dot_annotation.multiopt_ID.multiopt:
-  dot_annotation.multiopt_ID.multiopt '.' annotation.multiopt ID
+dot_annotation.multiopt_IDENTIFIER.multiopt:
+  dot_annotation.multiopt_IDENTIFIER.multiopt '.' annotation.multiopt IDENTIFIER
 | /*empty*/
 ;
 type_arguments_or_diamond.opt:
@@ -1213,9 +1199,9 @@ type_arguments_or_diamond:
 | "<>"
 ;
 field_access:
-  primary '.' ID
-| "super" '.' ID
-| type_name '.' "super" '.' ID
+  primary '.' IDENTIFIER
+| "super" '.' IDENTIFIER
+| type_name '.' "super" '.' IDENTIFIER
 ;
 array_access:
   expression_name '[' expression ']'
@@ -1223,11 +1209,11 @@ array_access:
 ;
 method_invocation:
   method_name '(' argument_list.opt ')'
-| type_name '.' type_arguments.opt ID '(' argument_list.opt ')'
-| expression_name '.' type_arguments.opt ID '(' argument_list.opt ')'
-| primary '.' type_arguments.opt ID '(' argument_list.opt ')'
-| "super" '.' type_arguments.opt ID '(' argument_list.opt ')'
-| type_name '.' "super" '.' type_arguments.opt ID '(' argument_list.opt ')'
+| type_name '.' type_arguments.opt IDENTIFIER '(' argument_list.opt ')'
+| expression_name '.' type_arguments.opt IDENTIFIER '(' argument_list.opt ')'
+| primary '.' type_arguments.opt IDENTIFIER '(' argument_list.opt ')'
+| "super" '.' type_arguments.opt IDENTIFIER '(' argument_list.opt ')'
+| type_name '.' "super" '.' type_arguments.opt IDENTIFIER '(' argument_list.opt ')'
 ;
 argument_list:
   expression com_expression.multiopt
@@ -1237,11 +1223,11 @@ com_expression.multiopt:
 | /*empty*/
 ;
 method_reference:
-  expression_name "::" type_arguments.opt ID
-| primary "::" type_arguments.opt ID
-| reference_type "::" type_arguments.opt ID
-| "super" "::" type_arguments.opt ID
-| type_name '.' "super" "::" type_arguments.opt ID
+  expression_name "::" type_arguments.opt IDENTIFIER
+| primary "::" type_arguments.opt IDENTIFIER
+| reference_type "::" type_arguments.opt IDENTIFIER
+| "super" "::" type_arguments.opt IDENTIFIER
+| type_name '.' "super" "::" type_arguments.opt IDENTIFIER
 | class_type "::" type_arguments.opt "new"
 | array_type "::" "new"
 ;
@@ -1270,7 +1256,7 @@ lambda_expression:
 ;
 lambda_parameters:
   '(' lambda_parameter_list.opt ')'
-| ID
+| IDENTIFIER
 ;
 lambda_parameter_list.opt:
   lambda_parameter_list
@@ -1278,10 +1264,10 @@ lambda_parameter_list.opt:
 ;
 lambda_parameter_list:
   lambda_parameter com_lambda_parameter.multiopt
-| ID com_ID.multiopt
+| IDENTIFIER com_IDENTIFIER.multiopt
 ;
-com_ID.multiopt:
-  com_ID.multiopt ',' ID
+com_IDENTIFIER.multiopt:
+  com_IDENTIFIER.multiopt ',' IDENTIFIER
 | /*empty*/
 ;
 com_lambda_parameter.multiopt:
@@ -1430,7 +1416,16 @@ switch_expression:
 constant_expression:
   expression
 ;
+
+
 %%
+
+
+/* EPILOGUE */
+
+void yyerror(char const *s){
+	printf("Error in line %d: %s\n", yylineno, s);
+}
 
 int createNode(string lbl) {
 	vector<int> v;
@@ -1444,9 +1439,39 @@ void addChild(int parent, int child) {
 	// cout << "Added Child - " << label[parent] << "->" << label[child] << endl;
 }
 
-int main(int argc, char** argv){
+void build_graph() {
+	freopen("out.dot", "w", stdout);
+	cout << "// dot -Tps out.dot -o out.ps\n\n"
+		 << "graph \"Abstract Syntax Tree\"\n"
+		 << "{\n"
+    	 << "\tfontname=\"Helvetica,Arial,sans-serif\"\n"
+    	 << "\tnode [fontsize=10, width=\".2\", height=\".2\", margin=0]\n"
+		 << "\tedge [fontsize=6]\n"
+    	 << "\tgraph[fontsize=8];\n\n"
+    	 << "\tlabel=\"Abstract Syntax Tree\"\n\n";
+
+	queue<int> nodesQueue;
+	nodesQueue.push(startNode);
+	while (!nodesQueue.empty()) {
+		int node = nodesQueue.front();
+		nodesQueue.pop();
+		cout << "\tn" << node << " ;\n";
+		cout << "\tn" << node << " [label=\"" << nodes[node].first << "\"] ;\n";
+		for (int child: nodes[node].second) {
+			cout << "\tn" << node << " -- " << 'n' << child << " ;\n";
+			nodesQueue.push(child);
+		}
+		cout << endl;
+	}
+
+	cout << "}" << endl;
+}
+
+int main(int argc, char *argv[]) {
 	yyin = fopen(argv[1], "r");
+  yydebug=1;
 	yyparse();
 	fclose(yyin);
+	// build_graph();
 	return 0;
 }
