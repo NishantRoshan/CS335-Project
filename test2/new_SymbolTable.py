@@ -65,10 +65,11 @@ class SymbolTableListener(JavaParserListener):
 
     def enterVariable_declarator_id(self, ctx):
         var_name = ctx.identifier().getText()
-        var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.type_type())
+        # print(f'{var_name} {(ctx.parentCtx.parentCtx.parentCtx.type_type())}')
+        var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.parentCtx.type_type())
         # var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.parentCtx.parentCtx.parentCtx.type_type())
         if var_type is None:
-            var_type = ctx.parentCtx.type_type().getText()
+            var_type = ctx.parentCtx.parentCtx.parentCtx.type_type().getText()
         if ctx.parentCtx.getChild(0).getText() == 'final':
             var_size = 0
         elif var_type == 'int':
@@ -92,7 +93,7 @@ class SymbolTableListener(JavaParserListener):
 
 if __name__ == '__main__':
     # Load the Java code file
-    with open('tests/a.java') as f:
+    with open('tests/h.java') as f:
         code = f.read()
 
     # Parse the Java code with ANTLR
@@ -109,8 +110,10 @@ if __name__ == '__main__':
     # Print the symbol table with sizes and offsets
     for scope in listener.scopes:
         print('---- Scope ----')
-        for symbol in scope.symbols.items():
-            info = scope.symbols[symbol]
+        for symbol,info in scope.symbols.items():
+            # print(scope.symbols['hfu'])
+            # print(symbol)
+            # info = scope.symbols[symbol]
             if info['type'] == 'class':
                 print(f'{symbol} (class)')
             elif info['type'] == 'method':
