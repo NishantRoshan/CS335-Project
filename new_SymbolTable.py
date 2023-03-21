@@ -51,6 +51,8 @@ class SymbolTableListener(JavaParserListener):
         method_name = ctx.identifier().getText()
         # return_type = ctx.typeType().getText()
         return_type = self.current_scope.get_symbol(ctx.type_type_or_void())
+        if return_type is None:
+            return_type = ctx.type_type_or_void().getText()
         lineno = str(ctx.start)[:-1].split(",")[-1]
         self.current_scope.add_symbol(method_name, 'method', lineno)
         self.current_scope = SymbolTable(parent=self.current_scope)
@@ -90,6 +92,18 @@ class SymbolTableListener(JavaParserListener):
         lineno = str(ctx.start)[:-1].split(",")[-1]
         self.current_scope.add_symbol(var_name, var_type, lineno, var_size)
 
+    def enterInteger_literal(self, ctx):
+        var_name = ctx.getText()
+        # print(f'{self.current_scope} {var_name}')
+        lineno = str(ctx.start)[:-1].split(",")[-1]
+        var_size = 4
+        self.current_scope.add_symbol(var_name, 'int', lineno, var_size)
+
+    def enterExpression(self, ctx):
+        id = ctx.identifier().getText()
+        # print('id')
+        lineno = str(ctx.start)[:-1].split(",")[-1]
+        # self.current_scope.symbols[id]['lines'].append(lineno)
 
     def enterFormal_parameter(self, ctx):
         var_name = ctx.variable_declarator_id().identifier().getText()
@@ -103,7 +117,7 @@ class SymbolTableListener(JavaParserListener):
 
 if __name__ == '__main__':
     # Load the Java code file
-    with open('tests/a.java') as f:
+    with open('tests/h.java') as f:
         code = f.read()
 
     # Parse the Java code with ANTLR
@@ -119,7 +133,7 @@ if __name__ == '__main__':
 
     # Print the symbol table with sizes and offsets
     for scope in listener.scopes:
-        print('---- Scope ----')
+        print(f'---- Scope ----')
         for symbol,info in scope.symbols.items():
             # print(scope.symbols['hfu'])
             # print(symbol)
@@ -128,12 +142,12 @@ if __name__ == '__main__':
                 print(f'{symbol} (class)')
             elif info['type'] == 'method':
                 print(f'{symbol} (method)')
-            elif info['type'] == 'parameter':
-                print(f'{symbol} (parameter) - size: {info["size"]}, offset: {info["offset"]}')
-            elif info['type'] == 'variable':
-                print(f'{symbol} (variable) - type: {info["type"]} size: {info["size"]}, offset: {info["offset"]}')
+            # elif info['type'] == 'parameter':
+            #     print(f'{symbol} (parameter) - size: {info["size"]}, offset: {info["offset"]}')
+            # elif info['type'] == 'variable':
+            #     print(f'{symbol} (variable) - type: {info["type"]} size: {info["size"]}, offset: {info["offset"]}')
             else:
-                print(f'{symbol} (nv) - type: {info["type"]} size: {info["size"]}, offset: {info["offset"]}')
+                print(f'{symbol} - type: {info["type"]}, size: {info["size"]}, offset: {info["offset"]}, lines: {info["lines"]}')
 
         print()
 
