@@ -50,7 +50,9 @@ class SymbolTableListener(JavaParserListener):
     def enterMethod_declaration(self, ctx):
         method_name = ctx.identifier().getText()
         # return_type = ctx.typeType().getText()
-        return_type = ctx.type_type_or_void()
+        return_type = self.current_scope.get_symbol(ctx.type_type_or_void())
+        if return_type is None:
+            return_type = ctx.type_type_or_void().getText()
         lineno = str(ctx.start)[:-1].split(",")[-1]
         self.current_scope.add_symbol(method_name, 'method', lineno)
         self.current_scope = SymbolTable(parent=self.current_scope)
@@ -65,25 +67,47 @@ class SymbolTableListener(JavaParserListener):
 
     def enterVariable_declarator_id(self, ctx):
         var_name = ctx.identifier().getText()
-        # print(f'{var_name} {(ctx.parentCtx.parentCtx.parentCtx.type_type())}')
-        var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.parentCtx.type_type())
+        # print(f'{var_name} {(ctx.parentCtx.type_type().getText())}')
+        # if ctx.parentCtx.
+        try:
+            var_type = self.current_scope.get_symbol(ctx.parentCtx.type_type())
+        except:
+            var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.parentCtx.type_type())
         # var_type = self.current_scope.get_symbol(ctx.parentCtx.parentCtx.parentCtx.parentCtx.parentCtx.type_type())
         if var_type is None:
-            var_type = ctx.parentCtx.parentCtx.parentCtx.type_type().getText()
+            try:
+                var_type = ctx.parentCtx.type_type().getText()
+            except:
+                var_type = ctx.parentCtx.parentCtx.parentCtx.type_type().getText()
         if ctx.parentCtx.getChild(0).getText() == 'final':
             var_size = 0
         elif var_type == 'int':
             var_size = 4
         elif var_type == 'boolean':
             var_size = 1
+        elif var_type == 'char':
+            var_size = 2
         else:
             var_size = 0
         lineno = str(ctx.start)[:-1].split(",")[-1]
-        self.current_scope.add_symbol(var_name, 'variable', lineno, var_size)
+        self.current_scope.add_symbol(var_name, var_type, lineno, var_size)
 
+    def enterInteger_literal(self, ctx):
+        var_name = ctx.getText()
+        # print(f'{self.current_scope} {var_name}')
+        lineno = str(ctx.start)[:-1].split(",")[-1]
+        var_size = 4
+        self.current_scope.add_symbol(var_name, 'int', lineno, var_size)
+
+    def enterExpression(self, ctx):
+        id = ctx.identifier().getText()
+        # print('id')
+        lineno = str(ctx.start)[:-1].split(",")[-1]
+        # self.current_scope.symbols[id]['lines'].append(lineno)
 
     def enterFormal_parameter(self, ctx):
         var_name = ctx.variable_declarator_id().identifier().getText()
+        # print(var_name)
         var_type = self.current_scope.get_symbol(ctx.type_type())
         if var_type is None:
             var_type = ctx.type_type().getText()
@@ -109,7 +133,7 @@ if __name__ == '__main__':
 
     # Print the symbol table with sizes and offsets
     for scope in listener.scopes:
-        print('---- Scope ----')
+        print(f'---- Scope ----')
         for symbol,info in scope.symbols.items():
             # print(scope.symbols['hfu'])
             # print(symbol)
@@ -118,9 +142,12 @@ if __name__ == '__main__':
                 print(f'{symbol} (class)')
             elif info['type'] == 'method':
                 print(f'{symbol} (method)')
-            elif info['type'] == 'parameter':
-                print(f'{symbol} (parameter) - size: {info["size"]}, offset: {info["offset"]}')
-            elif info['type'] == 'variable':
-                print(f'{symbol} (variable) - size: {info["size"]}, offset: {info["offset"]}')
+            # elif info['type'] == 'parameter':
+            #     print(f'{symbol} (parameter) - size: {info["size"]}, offset: {info["offset"]}')
+            # elif info['type'] == 'variable':
+            #     print(f'{symbol} (variable) - type: {info["type"]} size: {info["size"]}, offset: {info["offset"]}')
+            else:
+                print(f'{symbol} - type: {info["type"]}, size: {info["size"]}, offset: {info["offset"]}, lines: {info["lines"]}')
+
         print()
 
