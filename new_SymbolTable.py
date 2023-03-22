@@ -27,12 +27,26 @@ class SymbolTable:
             return self.parent.get_symbol(name)
         else:
             return None
+        
+
 
 class SymbolTableListener(JavaParserListener):
     def __init__(self):
         self.current_scope = SymbolTable()
         self.scopes = [self.current_scope]
         self.scope_ind = 0
+        self.temp_counter = 0
+        self.label_counter = 0
+
+    def new_temp(self):
+        temp = f"t{self.temp_counter}"
+        self.temp_counter += 1
+        return temp
+
+    def new_label(self):
+        label = f"L{self.label_counter}"
+        self.label_counter += 1
+        return label
 
     def enterClass_declaration(self, ctx):
         class_name = ctx.identifier().getText()
@@ -59,11 +73,14 @@ class SymbolTableListener(JavaParserListener):
         self.current_scope.add_symbol('return', return_type, lineno)
         self.scopes.append(self.current_scope)
         self.scope_ind += 1
+        print(f"FUNCTION {method_name}")
 
     def exitMethod_declaration(self, ctx):
         # self.scopes.pop()
         self.scope_ind -= 1
         self.current_scope = self.scopes[self.scope_ind]
+        print("END FUNCTION")
+
 
     def enterVariable_declarator_id(self, ctx):
         var_name = ctx.identifier().getText()
@@ -91,6 +108,7 @@ class SymbolTableListener(JavaParserListener):
             var_size = 0
         lineno = str(ctx.start)[:-1].split(",")[-1]
         self.current_scope.add_symbol(var_name, var_type, lineno, var_size)
+        print(f"[{var_name}] = {var_type}")
 
     def enterInteger_literal(self, ctx):
         var_name = ctx.getText()
@@ -99,9 +117,15 @@ class SymbolTableListener(JavaParserListener):
         var_size = 4
         self.current_scope.add_symbol(var_name, 'int', lineno, var_size)
 
-    def enterExpression(self, ctx):
-        id = ctx.identifier().getText()
-        # print('id')
+    def exitExpression(self, ctx):
+        # for i in ctx.getChildren():
+        #     print(i.getText())
+        id = ctx.getText()
+        if ctx.getChildCount() == 3:
+            temp_1 = self.new_temp()
+            print(f'[{temp_1}] = {ctx.expression(0).getText()}')
+            temp = self.new_temp()
+            print(f'[{temp}] = {temp_1} {ctx.getChild(1).getText()} {ctx.expression(1).getText()}')
         lineno = str(ctx.start)[:-1].split(",")[-1]
         # self.current_scope.symbols[id]['lines'].append(lineno)
 
@@ -150,4 +174,3 @@ if __name__ == '__main__':
                 print(f'{symbol} - type: {info["type"]}, size: {info["size"]}, offset: {info["offset"]}, lines: {info["lines"]}')
 
         print()
-
